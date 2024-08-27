@@ -7,7 +7,7 @@ interface BlockProps {
 
 export function Block({color, char = "", onClick, disabled = false}: BlockProps) {
     return <button 
-        className={`w-8 h-8 border-none`} 
+        className={`w-8 h-8 border-none rounded-sm`} 
         onClick={() => onClick()} 
         disabled={disabled}
         style={{

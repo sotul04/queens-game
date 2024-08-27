@@ -12,6 +12,7 @@ import { addNewColor, modifyBoard, parseBoardFile, validateConnectedRegions } fr
 import { ChangeEvent, useState } from "react";
 import { PlusIcon, EraserIcon } from "lucide-react";
 import { ModifyBoardAction } from "@/lib/parse";
+import { charColorMap } from "@/lib/color";
 
 interface BoardState {
     board: string[][] | null;
@@ -178,7 +179,7 @@ export default function Home() {
                         <h3 className="text-center font-semibold my-3">Board</h3>
                         <div className="flex flex-row gap-4 items-center justify-center">
                             <ColorPick color={boardState.color} selected={currentColor} onSelect={selectColor} />
-                            <button className="rounded-full bg-slate-300 shadow-md h-6 w-6 hover:bg-slate-500 transition-all duration-300" onClick={() => addColorRegion()}><PlusIcon /></button>
+                            <button disabled={boardState.color.size === charColorMap.size} className="rounded-full bg-slate-300 shadow-md h-6 w-6 hover:bg-slate-500 transition-all duration-300" onClick={() => addColorRegion()}><PlusIcon /></button>
                         </div>
                         <div className="flex flex-row my-4 gap-4 items-center justify-center">
                             <button onClick={() => handleModifyBoard('addRow')} className="rounded-full text-sm px-2 py-1 inline-flex bg-slate-300 shadow-md hover:bg-slate-500 hover:text-white transition-all duration-300">
