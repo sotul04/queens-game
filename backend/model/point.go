@@ -30,12 +30,12 @@ func (p Point) GenerateKnightMoves() []Point {
 	high := []int{-2, 2}
 	for _, x := range low {
 		for _, y := range high {
-			moves = append(moves, Point{x, y, nil})
+			moves = append(moves, Point{p.X + x, p.Y + y, nil})
 		}
 	}
 	for _, x := range high {
 		for _, y := range low {
-			moves = append(moves, Point{x, y, nil})
+			moves = append(moves, Point{p.X + x, p.Y + y, nil})
 		}
 	}
 	return moves

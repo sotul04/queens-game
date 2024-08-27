@@ -8,7 +8,7 @@ type DefaultSolver struct {
 	Board *model.Board
 }
 
-func (ds *DefaultSolver) Solve(rule func(a, b model.Point) bool) map[rune]model.Point {
+func (ds *DefaultSolver) Solve(rule func(a, b model.Point) bool) *map[rune]model.Point {
 	areas := ds.Board.GetAreas()
 	queens := []rune{}
 	for char := range areas {
@@ -40,5 +40,9 @@ func (ds *DefaultSolver) Solve(rule func(a, b model.Point) bool) map[rune]model.
 
 	DFS(nil, 0)
 
-	return solution
+	if len(solution) != nqueens {
+		return nil
+	}
+
+	return &solution
 }

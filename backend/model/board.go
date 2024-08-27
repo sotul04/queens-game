@@ -2,7 +2,6 @@ package model
 
 type Board struct {
 	Table [][]rune
-	Size  Size
 }
 
 func (b *Board) GetAreas() map[rune][]Point {
