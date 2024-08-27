@@ -1,113 +1,210 @@
-import Image from "next/image";
+'use client'
+
+import { Board } from "@/components/model/board";
+import { ColorPick } from "@/components/model/color-pick";
+import { SelectMode } from "@/components/select-mode";
+import { Tabs } from "@/components/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
+import { addNewColor, modifyBoard, parseBoardFile, validateConnectedRegions } from "@/lib/parse";
+import { ChangeEvent, useState } from "react";
+import { PlusIcon, EraserIcon } from "lucide-react";
+import { ModifyBoardAction } from "@/lib/parse";
+
+interface BoardState {
+    board: string[][] | null;
+    color: Map<string, string> | null;
+    mode: string | "default" | "queen" | "rook" | "bishop" | "knight" | undefined;
+}
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+    const { toast } = useToast();
+    const [boardState, setBoardState] = useState<BoardState>({ board: null, color: null, mode: "default" });
+    const [parsingMessage, setParsingMessage] = useState<string | null>(null);
+    const [solution, setSolution] = useState<number[][] | null>(null);
+    const [currentColor, setCurrentColor] = useState<string | null>(null);
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+    async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+        setSolution(null);
+        setCurrentColor(null);
+        const selectedFile = event.target.files?.[0];
+        if (selectedFile) {
+            const result = await parseBoardFile(selectedFile);
+            if (result.error || !result.board || !result.color) {
+                setParsingMessage(result.error);
+                setBoardState(prev => {
+                    return {
+                        ...prev,
+                        board: null,
+                        color: null
+                    }
+                })
+                return;
+            }
+            setParsingMessage(null);
+            setBoardState(prev => {
+                return {
+                    ...prev,
+                    board: result.board,
+                    color: result.color
+                }
+            });
+        }
+    }
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+    function handleModeChange(newMode: string) {
+        if (newMode === boardState.mode) {
+            return
+        }
+        setBoardState(prev => {
+            return {
+                ...prev,
+                mode: newMode
+            }
+        })
+    }
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+    async function solve() {
+        try {
+            const response = await fetch('http://localhost:8080/solve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'apllication/json',
+                },
+                body: JSON.stringify({
+                    board: boardState.board,
+                    mode: boardState.mode
+                })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status === 'success') {
+                    toast({
+                        title: "Board solution received",
+                    });
+                    setSolution(data.path);
+                } else {
+                    toast({
+                        title: "Board has no solution",
+                    });
+                    setSolution(null);
+                }
+            } else {
+                toast({
+                    title: "Error",
+                    description: 'Something went wrong. The response from solver Server is error.',
+                    variant: "destructive"
+                });
+                setSolution(null);
+            }
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: 'Something went wrong.',
+                variant: "destructive"
+            });
+            setSolution(null);
+        }
+    }
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+    function handleBlockClick(char: string, x: number, y: number) {
+        if (currentColor && boardState.board && boardState.color) {
+
+            if (boardState.board[x][y] === currentColor) return;
+
+            const newBoard = boardState.board.map(row => row.map(cell => cell));
+            newBoard[x][y] = currentColor;
+
+            if (validateConnectedRegions(newBoard)) {
+                setBoardState(prev => {
+                    return {
+                        ...prev,
+                        board: newBoard
+                    }
+                })
+            } else {
+                toast({
+                    title: "Opss",
+                    description: 'Your movement is not permitted',
+                    variant: "destructive"
+                })
+            }
+
+        }
+    }
+
+    function handleModifyBoard(action: ModifyBoardAction) {
+        setBoardState(prev => { return { ...prev, board: modifyBoard(prev.board!, action) } });
+        setSolution(null);
+    }
+
+    function addColorRegion() {
+        if (boardState.color) {
+            const newColor = addNewColor(boardState.color);
+            setBoardState(prev => {
+                return {
+                    ...prev,
+                    color: newColor
+                }
+            })
+        }
+    }
+
+    function selectColor(newColor: string) {
+        if (newColor === currentColor) return;
+        setCurrentColor(newColor);
+    }
+
+    return (
+        <main className="flex min-h-screen flex-col items-center">
+            <h2 className="font-sans font-semibold text-5xl mt-4">Queens Game Solver</h2>
+            <section className="w-[65%] mt-10 min-w-[400px] flex flex-col item-center container">
+                <Label htmlFor="input-file" className="my-2">Upload your board as <strong>TXT</strong> file</Label>
+                <Input
+                    id="input-file"
+                    className="cursor-pointer"
+                    type="file"
+                    accept=".txt"
+                    multiple={false}
+                    onChange={handleFileChange}
+                />
+                <SelectMode handleModeChange={handleModeChange} />
+                {parsingMessage && <Label className="text-red-500 my-2">{parsingMessage}</Label>}
+                {boardState.board && boardState.color &&
+                    <>
+                        <h3 className="text-center font-semibold my-3">Board</h3>
+                        <div className="flex flex-row gap-4 items-center justify-center">
+                            <ColorPick color={boardState.color} selected={currentColor} onSelect={selectColor} />
+                            <button className="rounded-full bg-slate-300 shadow-md h-6 w-6 hover:bg-slate-500 transition-all duration-300" onClick={() => addColorRegion()}><PlusIcon /></button>
+                        </div>
+                        <div className="flex flex-row my-4 gap-4 items-center justify-center">
+                            <button onClick={() => handleModifyBoard('addRow')} className="rounded-full text-sm px-2 py-1 inline-flex bg-slate-300 shadow-md hover:bg-slate-500 hover:text-white transition-all duration-300">
+                                <PlusIcon height={20} />&nbsp;Row
+                            </button>
+                            <button onClick={() => handleModifyBoard('removeRow')} disabled={boardState.board.length <= 1} className="rounded-full text-sm px-2 py-1 inline-flex bg-slate-300 shadow-md hover:bg-slate-500 hover:text-white transition-all duration-300">
+                                <EraserIcon height={20} />&nbsp;Row
+                            </button>
+                            <button onClick={() => handleModifyBoard('addColumn')} className="rounded-full text-sm px-2 py-1 inline-flex bg-slate-300 shadow-md hover:bg-slate-500 hover:text-white transition-all duration-300">
+                                <PlusIcon height={20} />&nbsp;Column
+                            </button>
+                            <button onClick={() => handleModifyBoard('removeColumn')} disabled={boardState.board.length <= 0 || boardState.board[0].length <= 1} className="rounded-full text-sm px-2 py-1 inline-flex bg-slate-300 shadow-md hover:bg-slate-500 hover:text-white transition-all duration-300">
+                                <EraserIcon height={20} />&nbsp;Column
+                            </button>
+                        </div>
+                        <div className="mx-auto my-1">
+                            <Board board={boardState.board} color={boardState.color} onBlockClick={handleBlockClick} />
+                        </div>
+                        <Button className="mx-auto bg-slate-700 mt-3 hover:bg-amber-950" onClick={() => solve()}>Solve</Button>
+                    </>
+                }
+                {solution && boardState.board && boardState.color && <div className="mx-auto my-3">
+                    <h3 className="text-center font-semibold mb-3">Solution</h3>
+                    <Board board={boardState.board} solution={solution} color={boardState.color} onBlockClick={(char, x, y) => { }} disabled />
+                </div>}
+            </section>
+        </main>
+    );
 }
